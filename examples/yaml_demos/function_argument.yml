@@ -1,0 +1,6 @@
+features:
+  - api:
+      name: "allocate_buffer"
+      args:
+        - id: 0
+          value: 0

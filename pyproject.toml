@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyctos"
+version = "0.3.0"
+dependencies = [
+    "cvc5",
+    "z3-solver",
+    "pyyaml",
+    "coverage",
+    "dill"
+]
+requires-python = ">=3.11, <3.14"
+authors = [
+    {name = "John Sarracino", email = "sarracino2@llnl.gov"},
+    {name = "Phil Lane", email = "lane47@llnl.gov"},
+    {name = "Eddy Westbrook", email = "westbrook5@llnl.gov"},
+    {name = "Nic Washbourne", email = "washbourne1@llnl.gov"}
+]
+maintainers = [
+    {name = "Phil Lane", email = "lane47@llnl.gov"},
+    {name = "Nic Washbourne", email = "washbourne1@llnl.gov"}
+]
+readme = "README.md"
+
+[project.optional-dependencies]
+dev = [
+    "mypy",
+    "autopep8",
+    "types-PyYAML"
+]
+misc = [
+    "paho-mqtt",
+    "numpy>=1.24"
+]
+
+[project.scripts]
+pyctos = "symbex:main"
+pyctat = "checker:main"
+pyctest = "pyctest:main"
+
+
+[tool.mypy]
+disable_error_code = ["import-untyped"]
