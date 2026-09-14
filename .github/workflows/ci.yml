@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, edited]
+  push:
+    branches: [main]
+    tags: ['**']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  format-and-type-check:
+    if: &non-draft-pr >-
+      github.event_name != 'pull_request' ||
+      (!github.event.pull_request.draft &&
+      !startsWith(github.event.pull_request.title, '[Draft]') &&
+      !startsWith(github.event.pull_request.title, '(Draft)') &&
+      !startsWith(github.event.pull_request.title, 'Draft:'))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ".[dev,misc]"
+      - name: Check formatting
+        run: autopep8 -r --diff -j "$(nproc)" --exit-code src examples
+      - name: Type check
+        run: mypy --check-untyped-defs -n "$(nproc)" src
+
+  test:
+    if: *non-draft-pr
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ".[misc]"
+      - name: Run tests
+        run: pyctest -n "$(nproc)"
