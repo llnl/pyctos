@@ -2,7 +2,7 @@ name: CI
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review, edited]
+    types: [opened, synchronize, reopened, ready_for_review]
   push:
     branches: [main]
     tags: ['**']
@@ -18,10 +18,7 @@ jobs:
   format-and-type-check:
     if: &non-draft-pr >-
       github.event_name != 'pull_request' ||
-      (!github.event.pull_request.draft &&
-      !startsWith(github.event.pull_request.title, '[Draft]') &&
-      !startsWith(github.event.pull_request.title, '(Draft)') &&
-      !startsWith(github.event.pull_request.title, 'Draft:'))
+      !github.event.pull_request.draft
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
