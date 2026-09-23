@@ -97,6 +97,91 @@ def scalar_positive(x):
 
 
 @pyctos_test('numpy.ufuncs')
+def scalar_square(x):
+  """
+  Tests scalar squaring
+  """
+  result = numpy.square(x)
+
+  pyctos_prove(equal_or_both_nan(result, x * x))
+
+  if result == 16:
+    pass
+
+
+@pyctos_test('numpy.ufuncs')
+def scalar_logical_not(x):
+  """
+  Tests scalar logical negation
+  """
+  operand = x == 0
+  result = numpy.logical_not(operand)
+
+  pyctos_prove(result != operand)
+
+
+@pyctos_test('numpy.ufuncs')
+def scalar_logical_and(x, y):
+  """
+  Tests scalar logical conjunction
+  """
+  lhs = x == 0
+  rhs = y == 0
+  result = numpy.logical_and(lhs, rhs)
+
+  pyctos_prove(result == ((lhs + rhs) == 2))
+
+
+@pyctos_test('numpy.ufuncs')
+def scalar_logical_or(x, y):
+  """
+  Tests scalar logical disjunction
+  """
+  lhs = x == 0
+  rhs = y == 0
+  result = numpy.logical_or(lhs, rhs)
+
+  pyctos_prove(result == ((lhs + rhs) != 0))
+
+
+@pyctos_test('numpy.ufuncs')
+def scalar_logical_xor(x, y):
+  """
+  Tests scalar logical inequality
+  """
+  lhs = x == 0
+  rhs = y == 0
+  result = numpy.logical_xor(lhs, rhs)
+
+  pyctos_prove(result == (lhs != rhs))
+
+
+@pyctos_test('numpy.ufuncs')
+def logical_numeric_array(x):
+  """
+  Tests numeric truth values in logical array operations
+  """
+  arr = numpy.zeros((3,), dtype=float)
+  arr[1] = 2
+  arr[2] = x
+
+  inverted = numpy.logical_not(arr)
+  combined = numpy.logical_and(arr, 2)  # 2 is truthy
+
+  pyctos_prove(inverted[0])
+  pyctos_prove(not inverted[1])
+  pyctos_prove(not combined[0])
+  pyctos_prove(combined[1])
+
+  if arr[2] == 0:
+    pyctos_prove(inverted[2])
+    pyctos_prove(not combined[2])
+  else:
+    pyctos_prove(not inverted[2])
+    pyctos_prove(combined[2])
+
+
+@pyctos_test('numpy.ufuncs')
 def scalar_equal(x, y):
   """
   Tests scalar equality
@@ -476,6 +561,29 @@ def reduce_equal_bool(x):
   result = numpy.equal.reduce(arr)
 
   pyctos_prove(result != first)
+
+
+@pyctos_test('numpy.ufuncs')
+def reduce_logical(x):
+  """
+  Tests logical reductions and their empty identities
+  """
+  arr = numpy.zeros((3,), dtype=bool)
+  empty = numpy.zeros((0,), dtype=bool)
+  arr[0] = x == 0
+  arr[1] = True
+  arr[2] = False
+
+  pyctos_prove(not numpy.logical_and.reduce(arr))
+  pyctos_prove(numpy.logical_or.reduce(arr))
+  xor_result = numpy.logical_xor.reduce(arr)
+  if arr[0]:
+    pyctos_prove(not xor_result)
+  else:
+    pyctos_prove(xor_result)
+  pyctos_prove(numpy.logical_and.reduce(empty))
+  pyctos_prove(not numpy.logical_or.reduce(empty))
+  pyctos_prove(not numpy.logical_xor.reduce(empty))
 
 
 @pyctos_test('numpy.ufuncs')

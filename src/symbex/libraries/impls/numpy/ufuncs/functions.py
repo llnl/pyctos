@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from abc import abstractmethod
+import math
 import sys
 from typing import Any, Callable, TypeVar, cast
 
@@ -16,8 +17,8 @@ except ImportError:
   def override(func: _F, /) -> _F:  # type: ignore
     return func
 
-from symbex.symbolic import factories
-from symbex.types.symbolicvalue import SymbolicValue
+from symbex.symbolic import factories, util
+from symbex.types.symbolicvalue import SymbolicValue, makeSymbolicValue
 
 from .bases import *
 from .names import *
@@ -140,6 +141,20 @@ class Positive(UnaryUFunc):
   @override
   def _op(self, value: SymbolicValue) -> SymbolicValue:
     return value
+
+
+@register_ufunc('square')
+class Square(UnaryUFunc):
+  """
+  Squares the operand.
+  """
+
+  def __init__(self):
+    super().__init__('square')
+
+  @override
+  def _op(self, value: SymbolicValue) -> SymbolicValue:
+    return value * value
 
 
 @register_ufunc('add')
@@ -266,3 +281,65 @@ class GreaterEqual(BinaryUFunc):
   @override
   def _op(self, lhs: SymbolicValue, rhs: SymbolicValue) -> SymbolicValue:
     return lhs >= rhs
+
+
+@register_ufunc('logical_not')
+class LogicalNot(UnaryUFunc):
+  """
+  Computes the truth-value inversion of the operand.
+  """
+
+  def __init__(self):
+    super().__init__('logical_not')
+
+  @override
+  def _op(self, value: SymbolicValue) -> SymbolicValue:
+    return _cast_scalar_unsafe(value, bool)._not()
+
+
+@register_ufunc('logical_and')
+class LogicalAnd(BinaryUFunc):
+  """
+  Computes the logical conjunction of the operands.
+  """
+
+  def __init__(self):
+    super().__init__('logical_and', identity=factories.lift_value(True))
+
+  @override
+  def _op(self, lhs: SymbolicValue, rhs: SymbolicValue) -> SymbolicValue:
+    lhs = _cast_scalar_unsafe(lhs, bool)
+    rhs = _cast_scalar_unsafe(rhs, bool)
+    return lhs._and(rhs)
+
+
+@register_ufunc('logical_or')
+class LogicalOr(BinaryUFunc):
+  """
+  Computes the logical disjunction of the operands.
+  """
+
+  def __init__(self):
+    super().__init__('logical_or', identity=factories.lift_value(False))
+
+  @override
+  def _op(self, lhs: SymbolicValue, rhs: SymbolicValue) -> SymbolicValue:
+    lhs = _cast_scalar_unsafe(lhs, bool)
+    rhs = _cast_scalar_unsafe(rhs, bool)
+    return lhs._or(rhs)
+
+
+@register_ufunc('logical_xor')
+class LogicalXor(BinaryUFunc):
+  """
+  Computes whether exactly one operand is truthy.
+  """
+
+  def __init__(self):
+    super().__init__('logical_xor', identity=factories.lift_value(False))
+
+  @override
+  def _op(self, lhs: SymbolicValue, rhs: SymbolicValue) -> SymbolicValue:
+    lhs = _cast_scalar_unsafe(lhs, bool)
+    rhs = _cast_scalar_unsafe(rhs, bool)
+    return lhs != rhs
