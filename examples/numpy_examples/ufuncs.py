@@ -10,7 +10,7 @@ from pyctest import pyctos_test
 from symbex.runtime import pyctos_assert, pyctos_prove
 
 
-def equals(x: float, y: float):
+def equal_or_both_nan(x: float, y: float):
   return x == y or (math.isnan(x) and math.isnan(y))
 
 
@@ -21,7 +21,7 @@ def scalar_add(x, y):
   """
   result = numpy.add(x, y, dtype=float)
 
-  pyctos_prove(equals(result, x + y))
+  pyctos_prove(equal_or_both_nan(result, x + y))
 
   if not math.isnan(result):
     if result < x:
@@ -37,7 +37,7 @@ def scalar_subtract(x, y):
   """
   result = numpy.subtract(x, y, dtype=float)
 
-  pyctos_prove(equals(result, x - y))
+  pyctos_prove(equal_or_both_nan(result, x - y))
 
   if not math.isnan(result):
     if result < 0:
@@ -54,7 +54,7 @@ def scalar_multiply(x):
   result = numpy.multiply(x, 2, dtype=float)
 
   if not isinstance(x, float) or math.isfinite(x):
-    pyctos_prove(equals(result, x * 2))
+    pyctos_prove(equal_or_both_nan(result, x * 2))
 
   if not math.isnan(result):
     if result < 0:
@@ -70,7 +70,7 @@ def scalar_negative(x):
   """
   result = numpy.negative(x, dtype=float)
 
-  pyctos_prove(equals(result, x * -1))
+  pyctos_prove(equal_or_both_nan(result, x * -1))
 
   if not math.isnan(x):
     if result < 0:
@@ -87,7 +87,7 @@ def scalar_positive(x):
   result = numpy.positive(x, dtype=float)
 
   if not isinstance(x, float) or math.isfinite(x):
-    pyctos_prove(equals(result, float(x)))
+    pyctos_prove(equal_or_both_nan(result, float(x)))
 
   if not math.isnan(x):
     if result < 0:
@@ -103,7 +103,7 @@ def scalar_equal(x, y):
   """
   result = numpy.equal(x, y, signature=(float, float, bool))
 
-  pyctos_prove(equals(result, (float(x) == float(y))))
+  pyctos_prove(result == (float(x) == float(y)))
 
 
 @pyctos_test('numpy.ufuncs')
@@ -113,7 +113,7 @@ def scalar_not_equal(x, y):
   """
   result = numpy.not_equal(x, y, signature=(float, float, bool))
 
-  pyctos_prove(equals(result, (float(x) != float(y))))
+  pyctos_prove(result == (float(x) != float(y)))
 
 
 @pyctos_test('numpy.ufuncs')
@@ -123,7 +123,7 @@ def scalar_less(x, y):
   """
   result = numpy.less(x, y, signature=(float, float, bool))
 
-  pyctos_prove(equals(result, (float(x) < float(y))))
+  pyctos_prove(result == (float(x) < float(y)))
 
 
 @pyctos_test('numpy.ufuncs')
@@ -133,7 +133,7 @@ def scalar_less_equal(x, y):
   """
   result = numpy.less_equal(x, y, signature=(float, float, bool))
 
-  pyctos_prove(equals(result, (float(x) <= float(y))))
+  pyctos_prove(result == (float(x) <= float(y)))
 
 
 @pyctos_test('numpy.ufuncs')
@@ -143,7 +143,7 @@ def scalar_greater(x, y):
   """
   result = numpy.greater(x, y, signature=(float, float, bool))
 
-  pyctos_prove(equals(result, (float(x) > float(y))))
+  pyctos_prove(result == (float(x) > float(y)))
 
 
 @pyctos_test('numpy.ufuncs')
@@ -153,7 +153,7 @@ def scalar_greater_equal(x, y):
   """
   result = numpy.greater_equal(x, y, signature=(float, float, bool))
 
-  pyctos_prove(equals(result, (float(x) >= float(y))))
+  pyctos_prove(result == (float(x) >= float(y)))
 
 
 @pyctos_test('numpy.ufuncs')
@@ -170,7 +170,7 @@ def ufunc_zero_dim(x, y):
 
     result = numpy.add(lhs, rhs)
 
-    pyctos_prove(equals(result, x + y))
+    pyctos_prove(result == x + y)
 
     if result == 11:
       pass
@@ -414,7 +414,7 @@ def ufunc_synthesized_input(lhs):
 
       pyctos_assert(result.shape[0] == 2)
       pyctos_assert(result.shape[1] == 2)
-      pyctos_prove(equals(result[0, 0], lhs[0, 0]))
+      pyctos_prove(equal_or_both_nan(result[0, 0], lhs[0, 0]))
 
 
 @pyctos_test('numpy.ufuncs', run_timeout=180_000, solver_timeout=20_000)
@@ -725,9 +725,9 @@ def reduce_synthesized_input(arr):
       result = numpy.add.reduce(arr, axis=1)
 
       pyctos_assert(result.shape == (2,))
-      pyctos_prove(equals(result[0], numpy.add(
+      pyctos_prove(equal_or_both_nan(result[0], numpy.add(
         arr[0, 0], arr[0, 1], dtype=arr.dtype)))
-      pyctos_prove(equals(result[1], numpy.add(
+      pyctos_prove(equal_or_both_nan(result[1], numpy.add(
         arr[1, 0], arr[1, 1], dtype=arr.dtype)))
 
 
@@ -760,11 +760,11 @@ def reduce_synthesized_input_concrete_out(arr):
 
       result = numpy.add.reduce(arr, axis=1, out=out)
 
-      pyctos_prove(equals(result[0], out[0]))
-      pyctos_prove(equals(out[0], numpy.add(
+      pyctos_prove(equal_or_both_nan(result[0], out[0]))
+      pyctos_prove(equal_or_both_nan(out[0], numpy.add(
         arr[0, 0], arr[0, 1], dtype=arr.dtype)))
       result[1] = arr[0, 0]
-      pyctos_prove(equals(out[1], arr[0, 0]))
+      pyctos_prove(equal_or_both_nan(out[1], arr[0, 0]))
 
 
 @pyctos_test('numpy.ufuncs', run_timeout=180_000, solver_timeout=20_000)
@@ -780,10 +780,10 @@ def reduce_synthesized_both(arr, out):
     expected[0] = arr[0, 0] + arr[0, 1]
     result = numpy.add.reduce(arr, axis=1, out=out)
 
-    pyctos_prove(equals(result[0], expected[0]))
+    pyctos_prove(equal_or_both_nan(result[0], expected[0]))
 
     result[0] = expected[0]
-    pyctos_prove(equals(out[0], expected[0]))
+    pyctos_prove(equal_or_both_nan(out[0], expected[0]))
 
 
 @pyctos_test('numpy.ufuncs')
