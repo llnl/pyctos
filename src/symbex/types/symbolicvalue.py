@@ -83,6 +83,20 @@ class SymbolicValue(Protocol):
     raise NotImplementedError
 
   @abstractmethod
+  def __neg__(self):
+    """
+    Base handler for `__neg__` operations on concolic objects.
+    """
+    raise NotImplementedError
+
+  @abstractmethod
+  def __pos__(self):
+    """
+    Base handler for `__pos__` operations on concolic objects.
+    """
+    raise NotImplementedError
+
+  @abstractmethod
   def __gt__(self, other):
     """
     Base handler for `__gt__` operations on concolic objects.

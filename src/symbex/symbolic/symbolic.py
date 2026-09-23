@@ -118,6 +118,24 @@ class SymbolicValueImpl(SymbolicValue):
     """
     return f"{str(self.v)} : {str(self.typ())} == {str(self.get_formula())}"
 
+  def __neg__(self):
+    """
+    Implementation for `__neg__` operations on concolic objects.
+    """
+    if has_attr(self, "__neg__"):
+      return handle_overloaded_op(self, "__neg__")
+    raise TypeError(
+      f"bad operand type for unary -: '{type(self.get_value()).__name__}'")
+
+  def __pos__(self):
+    """
+    Implementation for `__pos__` operations on concolic objects.
+    """
+    if has_attr(self, "__pos__"):
+      return handle_overloaded_op(self, "__pos__")
+    raise TypeError(
+      f"bad operand type for unary +: '{type(self.get_value()).__name__}'")
+
   def __gt__(self, other):
     """
     Implementation for `__gt__` operations on concolic objects.
