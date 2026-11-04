@@ -83,6 +83,11 @@ def generate_isinstance_interception(node: ast.Call) -> ast.expr:
                   node.args, [], lineno=node.lineno, col_offset=node.col_offset)
 
 
+def generate_is_none_interception(node: ast.Compare) -> ast.expr:
+  return ast.Call(ast.Name("_symbex_intercept_is_none", lineno=node.lineno, col_offset=node.col_offset, ctx=ast.Load()),
+                  [node.left], [], lineno=node.lineno, col_offset=node.col_offset)
+
+
 def is_atom(node: ast.AST) -> bool:
   return not (isinstance(node, ast.BoolOp) or (isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.Not)))
 
@@ -156,9 +161,9 @@ class InterceptStatements(ast.NodeTransformer):
       return ast.UnaryOp(ast.Not(), generate_in_interception(node),
                          lineno=node.lineno, col_offset=node.col_offset)
     elif isinstance(node.ops[0], ast.Is) and isinstance(node.comparators[0], ast.Constant) and node.comparators[0].value is None:
-      return ast.Compare(node.left, [ast.Eq()], node.comparators, lineno=node.lineno, col_offset=node.col_offset)
+      return generate_is_none_interception(node)
     elif isinstance(node.ops[0], ast.IsNot) and isinstance(node.comparators[0], ast.Constant) and node.comparators[0].value is None:
-      return ast.UnaryOp(ast.Not(), ast.Compare(node.left, [ast.Eq()], node.comparators, lineno=node.lineno, col_offset=node.col_offset),
+      return ast.UnaryOp(ast.Not(), generate_is_none_interception(node),
                          lineno=node.lineno, col_offset=node.col_offset)
     else:
       return node

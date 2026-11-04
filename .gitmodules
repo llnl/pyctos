@@ -1,0 +1,9 @@
+[submodule "benchmarks/tools/CrossHair"]
+	path = benchmarks/tools/CrossHair
+	url = https://github.com/pschanely/CrossHair.git
+[submodule "benchmarks/tools/PyCT"]
+	path = benchmarks/tools/PyCT
+	url = https://github.com/WWFUG/PyCT.git
+[submodule "benchmarks/tools/PyExZ3"]
+	path = benchmarks/tools/PyExZ3
+	url = https://github.com/thomasjball/PyExZ3.git

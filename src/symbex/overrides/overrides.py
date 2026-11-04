@@ -218,6 +218,17 @@ def intercept_isinstance(var: Union[Any, SymbolicValue], clas: Type) -> Union[bo
     return isinstance(var, clas)
 
 
+def intercept_is_none(var: Any) -> Union[bool, SymbolicValue]:
+  """
+  Intercepts expressions of the form `x is None` or `x is not None`.
+  """
+  if isinstance(var, SymbolicValue):
+    formula = symutil.lift_expr_to_any(var.get_formula())
+    return makeSymbolicValue(v=var.get_value() is None,
+                             formula=symutil.is_none(formula))
+  return var is None
+
+
 def intercept_function_call(lineno: int, colno: int, function: Callable[..., Optional[Any]], *args, **kwargs) -> Optional[Any]:
   """
   Intercepts function calls in tested code.
@@ -267,5 +278,6 @@ def install_overrides(module: ModuleType) -> None:
     "_symbex_intercept_atomic_while_condition"] = intercept_while
   module.__dict__[
     "_symbex_intercept_isinstance_call"] = intercept_isinstance
+  module.__dict__["_symbex_intercept_is_none"] = intercept_is_none
   module.__dict__[
     "_symbex_intercept_function_call"] = intercept_function_call

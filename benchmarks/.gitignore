@@ -1,0 +1,5 @@
+# Generated coverage reports
+coverage
+
+# Tool-specific virtual environments
+venvs
