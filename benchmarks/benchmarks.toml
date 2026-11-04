@@ -1,0 +1,68 @@
+[datasets.algorithms]
+root = 'datasets/algorithms'
+targets = [
+    'strings.barcode_validator:is_valid',
+    'maths.signum:signum',
+    'financial.interest:simple_interest',
+    'conversions.binary_to_gray_code:binary_to_gray',
+    'bit_manipulation.binary_and_operator:binary_and',
+    'bit_manipulation.rotate_bits:rotate_left32',
+    'maths.special_numbers.hexagonal_number:hexagonal',
+    'physics.photoelectric_effect:maximum_kinetic_energy',
+    'physics.speed_of_sound:speed_of_sound_in_a_fluid',
+]
+
+# pyct_tests is a symbolic link to PyCT's bundled test suite
+[datasets.pyct_tests]
+root = 'datasets/pyct_tests'
+targets = [
+    'build_in:build_in',
+    'call_obj:call_obj',
+    'do_abs:do_abs',
+    'do_array:do_array',
+    'do_numbers:do_numbers',
+    'do_range:do_range',
+    'list_dict:list_dict',
+    'loop:loop',
+    'while_loop:while_loop',
+
+    'strings.string_find:string_find',
+    'strings.string_in:string_in',
+    'strings.string_iter:string_iter',
+    'strings.string_others:string_others',
+    'strings.string_replace:string_replace',
+    'strings.string_slice:string_slice',
+    'strings.string_startswith:string_startswith',
+
+    'targets.count_emma:count_emma',
+    'targets.multiplication_or_sum:multiplication_or_sum',
+    'targets.regex:regex',
+    'targets.lib.email__header_value_parser:email__header_value_parser',
+
+    'targets.leetcode.add_digits:add_digits',
+    'targets.leetcode.fraction_to_decimal:fraction_to_decimal',
+    'targets.leetcode.isLongPressedName:isLongPressedName',
+    'targets.leetcode.numDecodings:numDecodings',
+    'targets.leetcode.restoreIpAddresses:restoreIpAddresses',
+    'targets.leetcode.reverseCheck:reverseCheck',
+    'targets.leetcode.substring:substring',
+    'targets.leetcode.substring2:substring2',
+    'targets.leetcode.ugly_number:ugly_number',
+
+    'target_int.leetcode_int.add_binary:add_binary',
+    'target_int.leetcode_int.addStrings:addStrings',
+    'target_int.leetcode_int.numDecodings:numDecodings',
+    'target_int.leetcode_int.restoreIpAddresses:restoreIpAddresses',
+    'target_int.leetcode_int.validIPAddress:validIPAddress',
+    'target_int.leetcode_int.validWordAbbreviation:validWordAbbreviation',
+
+    'target_int.lib_int.datetime__parse_hh_mm_ss_ff:datetime__parse_hh_mm_ss_ff',
+    'target_int.lib_int.datetime__parse_isoformat_date:datetime__parse_isoformat_date',
+    'target_int.lib_int.distutils_get_build_version:distutils_get_build_version',
+    'target_int.lib_int.email__parsedate_tz:email__parsedate_tz',
+    'target_int.lib_int.http_parse_request:http_parse_request',
+    'target_int.lib_int.ipaddress__ip_int_from_string:ipaddress__ip_int_from_string',
+    'target_int.lib_int.nntplib__parse_datetime:nntplib__parse_datetime',
+    'target_int.lib_int.smtpd_parseargs:smtpd_parseargs',
+    'target_int.lib_int.wsgiref_check_status:wsgiref_check_status',
+]
