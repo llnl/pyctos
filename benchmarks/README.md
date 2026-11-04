@@ -1,6 +1,6 @@
 # Pyctos benchmarking
 
-This directory contains a test harness for running several input discovery tools on a set of functions:
+This directory contains a test harness for running a couple of input discovery tools on a set of functions:
 
 - Pyctos (this repository)
 - CrossHair cover
@@ -53,9 +53,9 @@ benchmarks/venvs/venv-py3.11/bin/python -m pip install \
   -e benchmarks/tools/CrossHair
 ```
 
-#### Optional benchmark timing patch
+#### Patches
 
-CrossHair normally gives each new path its own timeout even when little of the condition timeout remains. This patch caps the next path's allocation at the remaining condition time. The harness's outer process timeout remains the hard generation limit; this patch alone is not a hard deadline because CrossHair may extend a detached path's timeout during finalization.
+By default, CrossHair allocates new branches the entire time budget, but the amount of time we allot for generation is the limit for how much time the tool can take overall. We patch `explore_loop()` in `crosshair/core.py` to cap the allocated time for a new branch with the amount of time left for the entire run:
 
 `benchmarks/tools/CrossHair/crosshair/core.py`:
 
@@ -89,7 +89,7 @@ After creating this file, install the package as editable:
 benchmarks/venvs/venv-py3.8/bin/python -m pip install -e benchmarks/tools/PyCT
 ```
 
-PyCT also requires a CVC4 1.8 executable addressable as `cvc4`. Download the appropriate binary from the [official CVC4 1.8 release](https://github.com/cvc5/cvc5/releases/tag/1.8), mark it executable, rename it to `cvc4`, and put its directory on `PATH`. PyCT invokes this executable directly and does not need Python bindings.
+PyCT also requires there to exist a CVC4 1.8 executable addressable as `cvc4`. You can just put this executable on PATH; PyCT doesn't use Python bindings for it.
 
 #### Patches
 
@@ -121,7 +121,7 @@ This allows for the installation described above.
 
 ##### Force `fork` multiprocessing context
 
-This is system-dependent, but is required on macOS with Python 3.8. PyCT's worker targets are nested functions, while macOS defaults to the `spawn` context and therefore tries to pickle them.
+This is system-dependent, but was required to run PyCT on my Mac: patch PyCT to create the worker processes with `multiprocessing.get_context("fork").Process(...)`. PyCT's implementation assumes this context, but Python 3.8 on MacOS defaults to `spawn` instead and pickling fails.
 
 `benchmarks/tools/PyCT/libct/explore.py`:
 
@@ -141,7 +141,7 @@ def _one_execution_primitive(...):
 
 ##### Use SMT-LIB 2.0
 
-`benchmarks/tools/PyCT/libct/solver.py`:
+Change CVC4's language argument in `libct/solver.py`:
 
 ```diff
 if solver == "cvc4":
@@ -150,13 +150,13 @@ if solver == "cvc4":
 +   cls.cmd = ["cvc4"] + ["--produce-models", "--lang", "smt2.0", "--quiet", "--strings-exp"]
 ```
 
-Despite CVC4 1.8 listing `smt` and `smt2.0` as aliases, its `smt` mode rejects PyCT formulas containing `int.to.str`; the same formulas work in `smt2.0` mode. Keep the existing `--quiet` argument.
+PyCT generates some formulas that are only accepted by CVC4 1.8 under SMT-LIB 2.0; I'm not sure why this is set to the legacy version explicitly.
 
 ### PyExZ3
 
 #### Installation
 
-PyExZ3 runs under Python 3.8. It is not structured as a Python package, but the harness runs `pyexz3.py` directly, so no editable installation is needed.
+PyExZ3 runs under Python 3.8. It's also not structured as a Python module, but the harness just runs `pyexz3.py` directly. We should probably add a `pyproject.toml` eventually akin to PyCT.
 
 For now, just install the required Z3 bindings into the Python 3.8 environment:
 
@@ -166,9 +166,14 @@ benchmarks/venvs/venv-py3.8/bin/python -m pip install z3-solver==5.1.0.0
 
 #### Patches
 
+##### Use Python 3 arg spec
+
+Replace `inspect.getargspec()` with `inspect.getfullargspec()` in
+`symbolic/loader.py`.
+
 ##### Seed symbolic inputs from annotation types
 
-PyExZ3 normally defaults every argument not covered by `@symbolic_args` to a symbolic integer. Use Python 3's argument API and derive exact `int` and `str` seeds from annotations instead. Other annotation forms retain the integer fallback.
+PyExZ3 allows seeding arguments with its `@symbolic_args` decorator rather than deriving types from parameter annotations. For parameters whose seed isn't specific in that decorator, inspect the annotation and if it's a supported type (`int` or `str`) then seed it with the respective symbolic type (`getSymbolic(seed)`):
 
 `benchmarks/tools/PyExZ3/symbolic/loader.py`:
 
@@ -189,9 +194,7 @@ def createInvocation(self):
 
 ##### NOT APPLIED: Use CVC4 for string support
 
-PyExZ3 supports integers and strings, but string reasoning requires its CVC4 backend. This remains disabled because the Python 3.8 environment does not contain the legacy uppercase `CVC4` module; the standalone `cvc4` executable used by PyCT is not that module.
-
-Once compatible bindings are available, enable the backend in `benchmarks/harness/tools.py`:
+PyExZ3 supports ints and strings, but string reasoning only works with the CVC4 backend. We should install compatible cvc4 bindings and add `--cvc` to the harness command to support cases with string parameters.
 
 ```diff
 class PyExZ3(KeywordInputTool):
