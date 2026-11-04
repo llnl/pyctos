@@ -9,6 +9,19 @@ This directory contains a test harness for running a couple of input discovery t
 
 Generation runs in a venv specific to the tool (one shared env for Pyctos and CrossHair, one for PyCT and PyExZ3). Replay/coverage run in the same interpreter (whichever one runs `benchmarks/main.py`).
 
+## Usage
+
+Benchmark datasets are defined in the `benchmarks.toml`. Each dataset block specifies a root directory and a list of cases in the format `path.to.module:function_under_test`.
+
+To run the test harness on a dataset:
+
+```sh
+python -m main [-t {pyctos,crosshair,pyct,pyexz3} | -a] [-o OUTPUT] [--timeout TIMEOUT] <dataset>
+```
+...where `<dataset>` is the identifier of some dataset in `benchmarks.toml`. Multiple tools to run can be specified with eg. `-t pyctos -t crosshair`, or all tools can be run with `-a`.
+
+The harness will write the specified output directory with coverage reports per case per tool, combined per-tool coverage reports, and an overall coverage JSON combining results from all tools. Each tool's subdirectory also contains generation and replay logs from each test case.
+
 ## Python environments
 
 We use three different virtual environments for benchmarking:
