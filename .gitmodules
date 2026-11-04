@@ -7,3 +7,6 @@
 [submodule "benchmarks/tools/PyExZ3"]
 	path = benchmarks/tools/PyExZ3
 	url = https://github.com/thomasjball/PyExZ3.git
+[submodule "benchmarks/datasets/algorithms"]
+	path = benchmarks/datasets/algorithms
+	url = https://github.com/TheAlgorithms/Python.git
