@@ -1,3 +1,8 @@
+# Copyright 2025-2026 Lawrence Livermore National Security, LLC and other Pyctos Developers.
+# See the top-level LICENSE file for details.
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -17,7 +22,7 @@ if TYPE_CHECKING:
   from .cases import Case, Dataset
 
 
-# Keep buffered artifact finalization inside the generation wall limit
+# Grace period to keep finalization within the exploration time limit
 _FINALIZATION_GRACE_SECONDS = 5
 
 
@@ -42,9 +47,8 @@ class Tool(ABC):
       check: bool = True,
   ) -> subprocess.CompletedProcess[str]:
     """
-    Run a generator and save its captured output.
+    Run an exploration/generation command and save its output.
     """
-    # Regular files prevent inherited pipe descriptors from blocking collection
     with TemporaryFile(mode='w+', encoding='utf-8') as stdout_file, \
         TemporaryFile(mode='w+', encoding='utf-8') as stderr_file:
       process = subprocess.Popen(
@@ -53,7 +57,6 @@ class Tool(ABC):
           stdout=stdout_file,
           stderr=stderr_file,
           text=True,
-          # Put the generator and its solver children in one killable group
           start_new_session=True,
       )
       try:
@@ -65,7 +68,8 @@ class Tool(ABC):
         stdout = stdout_file.read()
         stderr = stderr_file.read()
         self._save_generation_log(output_dir, stdout, stderr, timeout)
-        # Preserve partial output so an adapter can salvage generated inputs
+
+        # Save whatever inputs were generated before failure
         error.output = stdout.encode()
         error.stderr = stderr.encode()
         raise
@@ -118,7 +122,7 @@ class Tool(ABC):
       timeout: int,
   ) -> None:
     """
-    Generate replayable inputs for one case.
+    Run exploration and save generated inputs for a single case.
     """
     raise NotImplementedError
 
@@ -137,7 +141,7 @@ class Tool(ABC):
 
 class KeywordInputTool(Tool):
   """
-  Tool whose replay artifact is a pickled list of keyword dictionaries.
+  Tool that saves to and replays from dumped kwarg dictionaries.
   """
 
   inputs_path: ClassVar[Path]
@@ -261,18 +265,18 @@ class CrossHair(KeywordInputTool):
       output_dir: Path,
       timeout: int,
   ) -> None:
+    # Leave a grace period for finalization within the exploration time limit
     search_timeout = max(1, timeout - _FINALIZATION_GRACE_SECONDS)
     result = self._run(
         (
             str(self.python), '-m', 'crosshair', 'cover',
-            # Retain paths that differ only inside downstream callees
+            # Differentiate inputs by symbolic paths, not just concrete instructions
             '--coverage_type=path',
             '--example_output_format=arg_dictionary',
-            # A condition timeout otherwise disables CrossHair's native plateau
+            # Reenable plateau stops so we don't use the full time limit for every case
             '--max_uninteresting_iterations=5',
-            # Favor breadth over cover's 30-second default per-path budget
-            '--per_path_timeout=5',
-            # Leave CrossHair's four-second realization phase inside the wall limit
+            # Limit each path's exploration time to avoid spending the whole budget on one branch
+            # '--per_path_timeout=5',
             f'--per_condition_timeout={search_timeout}',
             f'{case.module}.{case.function}',
         ),
@@ -306,6 +310,8 @@ class PyCT(KeywordInputTool):
         / case.module / case.function
     )
     saved_stats = output_dir / 'generated'
+
+    # Leave a grace period for finalization within the exploration time limit
     search_timeout = max(1, timeout - _FINALIZATION_GRACE_SECONDS)
     shutil.rmtree(stats_dir, ignore_errors=True)
     shutil.rmtree(saved_stats, ignore_errors=True)
@@ -313,13 +319,11 @@ class PyCT(KeywordInputTool):
       self._run(
           (
               str(self.python), str(self.script),
-              # Let annotations and defaults supply seeds for an untuned run
               case.module, '{}',
               '--root', str(dataset.root),
               '--func', case.function,
-              # Leave time to dump inputs before the outer wall timeout
               '--total_timeout', str(search_timeout),
-              # Persist explored inputs for the shared coverage replay
+              # Keep explored inputs
               '--dump_projstats',
           ),
           dataset.root,
@@ -351,7 +355,7 @@ class PyExZ3(KeywordInputTool):
     command = (
         # Flush each input so a timeout does not lose buffered results
         str(self.python), '-u', str(self.script),
-        # FIXME: use cvc4, but install it first
+        # FIXME: use cvc4, but install it (and bindings) first
         '--start', case.function,
         str(dataset.target_file(case)),
     )
@@ -378,7 +382,7 @@ class PyExZ3(KeywordInputTool):
   @staticmethod
   def _save_inputs(inputs_file: Path, stdout: str) -> None:
     """
-    Normalize PyExZ3's printed inputs into the shared replay format.
+    Normalize PyExZ3's printed inputs into kwarg objects for replay.
     """
     inputs = []
     for line in stdout.splitlines():

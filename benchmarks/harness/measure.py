@@ -1,3 +1,8 @@
+# Copyright 2025-2026 Lawrence Livermore National Security, LLC and other Pyctos Developers.
+# See the top-level LICENSE file for details.
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 from contextlib import redirect_stderr, redirect_stdout
 import json
 import logging
@@ -34,7 +39,6 @@ def build_scopes(dataset: Dataset) -> dict[Case, FunctionScope]:
   visitor = CallGraphVisitor(
       sorted(str(path) for path in root.rglob('*.py')),
       root=str(root),
-      # Invalid unrelated files do not affect configured target resolution
       logger=logging.Logger('benchmark-pyan', logging.ERROR),
   )
 
@@ -68,7 +72,6 @@ def build_scopes(dataset: Dataset) -> dict[Case, FunctionScope]:
       if node in reachable:
         continue
       reachable.add(node)
-      # Definition edges would add every method on a referenced class
       pending.extend(visitor.uses_edges.get(node, ()))
 
     scope: dict[Path, set[str]] = {}
@@ -144,7 +147,7 @@ def _measure_function(
     coverage.stop()
     coverage.save()
 
-  # Score the static dataset-function closure shared by every tool
+  # Score the entire closure we found with Pyan
   coverage.json_report(
       morfs=[str(path) for path in scope],
       outfile=str(report_file),
