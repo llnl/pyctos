@@ -221,13 +221,12 @@ class ConcolicEngine:
         return
 
       # Diverged from the parent; we need to solve everything from here
-      logger.debug("branch at depth %d diverged from parent prefix", trace_index + 1)
+      logger.debug(
+        "branch at depth %d diverged from parent prefix", trace_index + 1)
       del self.trace[trace_index:]
 
     # If we're past the parent's path prefix, grow the trace
     self.trace.append((term, direction))
-
-
     other_path: SymbolicValue = self.path_condition._and(valu._not())
     self.path_condition = self.path_condition._and(valu)
 
