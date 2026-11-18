@@ -57,4 +57,17 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install ".[misc]"
       - name: Run tests
-        run: pyctest -n "$(nproc)"
+        run: |
+          SECONDS=0
+          status=0
+          pyctest -n "$(nproc)" || status=$?
+          elapsed=$SECONDS
+
+          {
+            echo '| Python version | Test suite wall time |'
+            echo '|---|---:|'
+            printf '| %s | %dm %02ds |\n' \
+              '${{ matrix.python-version }}' \
+              "$((elapsed / 60))" \
+              "$((elapsed % 60))"
+          } >> "$GITHUB_STEP_SUMMARY"
