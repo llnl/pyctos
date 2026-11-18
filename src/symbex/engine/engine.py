@@ -50,6 +50,7 @@ class ConcolicFrame:
   global_variables: Dict[GlobalVar, SymbolicValue]
   # (file name, SMT file variable) -> file contents
   filesystem_variables: Dict[Tuple[str, str], str]
+  path_prefix: tuple[tuple[Any, bool], ...] = ()
 
 
 @dataclass
@@ -77,6 +78,9 @@ class ConcolicEngine:
   max_depth: int = 64
   timeout: int = 5000
   features: ClassVar[List[YamlFeature]] = []
+
+  # Branches taken this run; starts as the expected prefix from a negated parent
+  trace: list[tuple[Any, bool]] = dataclasses.field(default_factory=list)
 
   @staticmethod
   def set_max_execution_depth(depth: int) -> None:
@@ -203,6 +207,27 @@ class ConcolicEngine:
 
     valu = get_path_condition_append(v)
 
+    # Append to the running trace
+    sbool = v.to_sbool()
+    term, direction = sbool.get_formula(), bool(sbool.get_value())
+
+    # If we're in a prefix of the parent path, check that we haven't diverged
+    trace_index = self.execution_depth - 1
+    if trace_index < len(self.trace):
+      expected_term, expected_direction = self.trace[trace_index]
+      if direction == expected_direction and smt.eq(term, expected_term):
+        # No divergence; we're continuing along an already-negated parent path
+        self.path_condition = self.path_condition._and(valu)
+        return
+
+      # Diverged from the parent; we need to solve everything from here
+      logger.debug("branch at depth %d diverged from parent prefix", trace_index + 1)
+      del self.trace[trace_index:]
+
+    # If we're past the parent's path prefix, grow the trace
+    self.trace.append((term, direction))
+
+
     other_path: SymbolicValue = self.path_condition._and(valu._not())
     self.path_condition = self.path_condition._and(valu)
 
@@ -258,7 +283,8 @@ class ConcolicEngine:
         new_files[file_name] = newv
 
       self.unexplored_inputs.append(
-        ConcolicFrame(other_path, self.params.bind(**new_params), new_globals, new_files))
+        ConcolicFrame(other_path, self.params.bind(**new_params), new_globals, new_files,
+                      tuple(self.trace[:-1]) + ((term, not direction),)))
 
       reset_references()
 
@@ -351,6 +377,7 @@ class ConcolicEngine:
       self.path_condition = concolic_frame.path_condition
       self.file_concs = concolic_frame.filesystem_variables
       self.execution_depth = 0
+      self.trace = list(concolic_frame.path_prefix)
 
       next_input = concolic_frame.function_arguments
       next_globals = concolic_frame.global_variables
